@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Qwek.Applications.Models;
 using Qwek.Applications.UseCases;
+using Qwek.Interfaces.Web;
 
 namespace Qwek.Interfaces.Endpoints;
 
@@ -109,6 +110,15 @@ public static class MessageEndpoints
             return Results.BadRequest(new
             {
                 errors = new[] { "That file type is not supported." }
+            });
+        }
+
+        if (!await FileSignatureValidator.MatchesExtensionAsync(
+                file, extension, ct))
+        {
+            return Results.BadRequest(new
+            {
+                errors = new[] { "File content does not match its file extension." }
             });
         }
 

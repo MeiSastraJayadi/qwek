@@ -34,6 +34,8 @@ public class AppDbContext : IdentityDbContext<PersonalUser>
         {
             entity.Property(s => s.Id).ValueGeneratedNever();
 
+            entity.HasIndex(s => s.InviteCode).IsUnique();
+
             entity.Property(s => s.CreatedAt)
                 .HasDefaultValueSql("NOW()")
                 .ValueGeneratedOnAdd();

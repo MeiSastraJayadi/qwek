@@ -1,5 +1,6 @@
 using Qwek.Applications.Models;
 using Qwek.Applications.UseCases;
+using Qwek.Interfaces.Web;
 
 namespace Qwek.Interfaces.Endpoints;
 
@@ -84,6 +85,12 @@ public static class UserEndpoints
             !AvatarExtensions.Contains(extension))
         {
             return Fail("Avatar must be a PNG, JPG, or GIF image.");
+        }
+
+        if (!await FileSignatureValidator.MatchesExtensionAsync(
+                file, extension, ct))
+        {
+            return Fail("Avatar content does not match its file extension.");
         }
 
         UserProfile? profile = await users.GetProfileAsync(ct);

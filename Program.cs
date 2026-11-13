@@ -1,6 +1,11 @@
+using System.Net;
 using System.Text;
+using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Qwek.Applications.Commons.Options;
@@ -66,6 +71,37 @@ builder.Services
 builder.Services.AddAuthorization(); 
 builder.Services.AddSignalR();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders =
+        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    foreach (string proxy in builder.Configuration
+        .GetSection("ForwardedHeaders:KnownProxies")
+        .Get<string[]>() ?? [])
+    {
+        if (IPAddress.TryParse(proxy, out IPAddress? address))
+        {
+            options.KnownProxies.Add(address);
+        }
+    }
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+    options.AddPolicy("auth", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
+});
+
 
 builder.Services.AddW3CLogging(logging =>
 {
@@ -74,7 +110,8 @@ builder.Services.AddW3CLogging(logging =>
     logging.FileSizeLimit = 10 * 1024 * 1024;
     logging.RetainedFileCountLimit = 10;
     logging.FlushInterval = TimeSpan.FromSeconds(5);
-    logging.LoggingFields = W3CLoggingFields.All;
+    logging.LoggingFields =
+        W3CLoggingFields.All & ~W3CLoggingFields.UriQuery;
 });
 
 // Add services to the container.
@@ -94,14 +131,29 @@ builder.Services.AddScoped<Users>();
 
 var app = builder.Build();
 
+FileExtensionContentTypeProvider contentTypeProvider = new();
+contentTypeProvider.Mappings[".md"] = "text/markdown";
+contentTypeProvider.Mappings[".webm"] = "video/webm";
+contentTypeProvider.Mappings[".webp"] = "image/webp";
+contentTypeProvider.Mappings[".mov"] = "video/quicktime";
+contentTypeProvider.Mappings[".ogg"] = "audio/ogg";
+contentTypeProvider.Mappings[".wav"] = "audio/wav";
+contentTypeProvider.Mappings[".mp3"] = "audio/mpeg";
+
+app.UseForwardedHeaders();
 app.UseExceptionHandler();
+app.UseRateLimiter();
 
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsRoot),
     RequestPath = "/uploads",
-    ServeUnknownFileTypes = true,
-    DefaultContentType = "application/octet-stream"
+    ContentTypeProvider = contentTypeProvider,
+    DefaultContentType = "application/octet-stream",
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    }
 });
 
 app.UseAuthentication();

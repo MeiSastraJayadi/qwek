@@ -10,7 +10,8 @@ public static class AuthEndpoints
 
         RouteGroupBuilder group = app.MapGroup("/api/auth")
             .WithTags("Auth")
-            .AllowAnonymous();
+            .AllowAnonymous()
+            .RequireRateLimiting("auth");
 
         group.MapPost("/register", RegisterAsync);
         group.MapPost("/login", LoginAsync);

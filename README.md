@@ -53,7 +53,7 @@ API listens on `http://localhost:5206`; OpenAPI is enabled in Development.
 |---|---|
 | Auth | `POST /api/auth/register`, `POST /api/auth/login` |
 | Users | `GET /api/users/me`, `PATCH /api/users/me/display-name`, `/username`, `/avatar`, `POST /avatar/upload` |
-| Servers | `GET/POST /api/servers`, `GET /api/servers/{id}/members`, `POST /api/servers/{id}/join`, `/leave`, `DELETE /api/servers/{id}` |
+| Servers | `GET/POST /api/servers`, `GET /api/servers/{id}/members`, `GET /api/servers/{id}/invite`, `POST /api/servers/{id}/join`, `/leave`, `DELETE /api/servers/{id}` |
 | Channels | `GET/POST /api/servers/{id}/channels`, `PATCH/DELETE /channel/{id}` |
 | Messages | `GET/POST /api/channels/{id}/messages`, `POST /upload`, `PATCH/DELETE /api/messages/{id}`, `POST /api/messages/{id}/reactions` |
 | Hub | `/hubs/chat` |
@@ -67,11 +67,29 @@ All routes except auth require `Authorization: Bearer <token>`.
 ## Docker
 
 ```bash
-docker build -t qwek .
-docker run -p 8080:8080 \
-  -e ConnectionStrings__DefaultConnection="<connection-string>" \
-  -e Jwt__Issuer=Qwek \
-  -e Jwt__Audience=Qwek \
-  -e Jwt__Key="<32+-character-signing-key>" \
-  qwek
+docker build -t qwek:latest .
+cp .env.example .env
+docker compose up -d
 ```
+
+The API is bound to `127.0.0.1:8080` by default. Set `BIND_ADDRESS` if your
+reverse proxy runs on another interface or container.
+
+## Production
+
+Always put the API behind a reverse proxy that terminates TLS and never expose
+port 8080 directly. Example `Caddyfile`:
+
+```text
+chat.example.com {
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+The app trusts loopback proxies for `X-Forwarded-For` and `X-Forwarded-Proto`.
+If the proxy runs in another container, set its address with
+`ForwardedHeaders__KnownProxies__0=<proxy-ip>`.
+
+Auth endpoints are rate limited to 10 requests per minute per IP. Keep `.env`
+private (`chmod 600`), use a database user with minimal privileges, and rotate
+`JWT_KEY` immediately if it is ever exposed.

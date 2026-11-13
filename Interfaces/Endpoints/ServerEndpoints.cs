@@ -17,6 +17,7 @@ public static class ServerEndpoints
         servers.MapPost("/", CreateAsync); 
         servers.MapGet("/", GetMineAsync); 
         servers.MapGet("/{serverId:guid}/members", GetMemberAsync); 
+        servers.MapGet("/{serverId:guid}/invite", GetInviteAsync);
         servers.MapPost("/{serverId:guid}/join", JoinAsync); 
         servers.MapPost("/{serverId:guid}/leave", LeaveAsync); 
         servers.MapDelete("/{serverId:guid}", DeleteAsync);
@@ -53,11 +54,19 @@ public static class ServerEndpoints
         return Results.Ok(result);
     }
 
-    private static async Task<IResult> JoinAsync(
+    private static async Task<IResult> GetInviteAsync(
         Guid serverId, Servers servers, CancellationToken ct
     )
     {
-        await servers.JoinAsync(serverId, ct); 
+        ServerInviteDto result = await servers.GetInviteAsync(serverId, ct);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> JoinAsync(
+        Guid serverId, JoinServerRequest request, Servers servers, CancellationToken ct
+    )
+    {
+        await servers.JoinAsync(serverId, request.InviteCode, ct); 
         return Results.NoContent();
     }
 
@@ -78,5 +87,7 @@ public static class ServerEndpoints
     }
 
     public sealed record CreateServerRequest(string Name, string? AvatarUrl);
+
+    public sealed record JoinServerRequest(string InviteCode);
 
 }

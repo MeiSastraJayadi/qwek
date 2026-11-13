@@ -13,6 +13,7 @@ public class Servers
     private readonly ICurrentUser _currentUser;
     private readonly IRealtimeNotifier _realtimeNotifier;
     private readonly IUserDirectory _userDirectory;
+    private readonly IInviteCodeGenerator _inviteCodeGenerator;
 
     public Servers(
         IServerRepository serverRepository, 
@@ -20,7 +21,8 @@ public class Servers
         IUnitOfWork unitOfWork, 
         ICurrentUser currentUser, 
         IRealtimeNotifier realtimeNotifier,
-        IUserDirectory userDirectory
+        IUserDirectory userDirectory,
+        IInviteCodeGenerator inviteCodeGenerator
     )
     {
         _serverRepository = serverRepository; 
@@ -29,6 +31,7 @@ public class Servers
         _currentUser = currentUser; 
         _realtimeNotifier = realtimeNotifier;
         _userDirectory = userDirectory;
+        _inviteCodeGenerator = inviteCodeGenerator;
     }
 
     private string GetUserId()
@@ -45,7 +48,8 @@ public class Servers
     )
     {
         string userId = GetUserId();
-        Server server = new Server(name, userId, avatarUrl); 
+        Server server = new Server(
+            name, userId, avatarUrl, _inviteCodeGenerator.Generate()); 
         await _serverRepository.AddAsync(server, ct);
         await _serverMemberRepository.AddAsync(new ServerMember(userId, server.Id), ct);
         await _unitOfWork.SaveChangesAsync(ct); 
@@ -92,26 +96,48 @@ public class Servers
                     serverId,
                     profile?.UserName ?? string.Empty,
                     profile?.DisplayName ?? "Unknown",
-                    profile?.Email,
                     member.CreatedAt);
             })
             .ToList();
     }
 
-    public async Task JoinAsync(Guid serverId, CancellationToken ct)
+    public async Task JoinAsync(
+        Guid serverId, string inviteCode, CancellationToken ct)
     {
         string userId = GetUserId(); 
 
         if (await _serverMemberRepository.IsMemberAsync(userId, serverId, ct))
             return;
         
-        if (!await _serverRepository.ExistAsync(serverId, ct))
-            throw new KeyNotFoundException("Server was not found"); 
+        Server server = await _serverRepository.GetByIdAsync(serverId, ct)
+            ?? throw new KeyNotFoundException("Server was not found");
+
+        if (!string.Equals(
+                server.InviteCode,
+                inviteCode?.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            throw new UnauthorizedAccessException("Invalid invite code");
+        }
         
         await _serverMemberRepository.AddAsync(new ServerMember(userId, serverId), ct);
         await _unitOfWork.SaveChangesAsync(ct); 
 
         await _realtimeNotifier.MemberJoinedServerAsync(serverId, userId, ct);
+    }
+
+    public async Task<ServerInviteDto> GetInviteAsync(
+        Guid serverId, CancellationToken ct)
+    {
+        string userId = GetUserId();
+
+        if (!await _serverMemberRepository.IsMemberAsync(userId, serverId, ct))
+            throw new UnauthorizedAccessException("You are not the member of this server");
+
+        Server server = await _serverRepository.GetByIdAsync(serverId, ct)
+            ?? throw new KeyNotFoundException("Server was not found");
+
+        return new ServerInviteDto(server.Id, server.InviteCode);
     }
 
     public async Task LeaveAsync(Guid serverId, CancellationToken ct)

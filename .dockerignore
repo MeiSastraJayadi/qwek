@@ -8,6 +8,7 @@
 .git/
 .gitignore
 .dockerignore
+.env
 Dockerfile
 LogFiles/
 uploads/

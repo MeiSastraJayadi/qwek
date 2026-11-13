@@ -123,9 +123,22 @@ Content-Type: application/json
 ### Token from the second login
 @tokenBob = {{loginBob.response.body.$.accessToken}}
 
+### Get the server invite code (owner)
+# @name getInvite
+GET {{Qwek_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/invite
+Authorization: Bearer {{token}}
+
+### Invite code from the response above
+@inviteCode = {{getInvite.response.body.$.inviteCode}}
+
 ### Second user joins the server
 POST {{Qwek_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/join
 Authorization: Bearer {{tokenBob}}
+Content-Type: application/json
+
+{
+  "inviteCode": "{{inviteCode}}"
+}
 
 ### Second user sends a message
 POST {{Qwek_HostAddress}}/api/channels/{{createChannel.response.body.$.id}}/messages

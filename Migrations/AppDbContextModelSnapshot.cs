@@ -349,6 +349,11 @@ namespace Qwek.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("NOW()");
 
+                    b.Property<string>("InviteCode")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("invite_code");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")
@@ -361,6 +366,10 @@ namespace Qwek.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_servers");
+
+                    b.HasIndex("InviteCode")
+                        .IsUnique()
+                        .HasDatabaseName("ix_servers_invite_code");
 
                     b.HasIndex("OwnerId")
                         .HasDatabaseName("ix_servers_owner_id");

@@ -28,8 +28,27 @@ public class ChatHub : Hub
         _users = users;
     }
 
-    public Task JoinChannel(int channelId) =>
-        Groups.AddToGroupAsync(Context.ConnectionId, $"channel:{channelId}");
+    public async Task JoinChannel(int channelId)
+    {
+        string? userId = Context.UserIdentifier;
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        CancellationToken ct = Context.ConnectionAborted;
+        Channel? channel = await _channels.GetByIdAsync(channelId, ct);
+
+        if (channel is null ||
+            !await _members.IsMemberAsync(userId, channel.ServerId, ct))
+        {
+            return;
+        }
+
+        await Groups.AddToGroupAsync(
+            Context.ConnectionId, $"channel:{channelId}", ct);
+    }
 
     public Task LeavelChannel(int channelId) =>
         Groups.RemoveFromGroupAsync(Context.ConnectionId, $"channel:{channelId}");
