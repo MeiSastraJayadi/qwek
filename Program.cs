@@ -19,8 +19,16 @@ using Qwek.Interfaces.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
-string uploadsRoot = Path.Combine(builder.Environment.ContentRootPath, "uploads");
-Directory.CreateDirectory(Path.Combine(uploadsRoot, "avatars"));
+StorageOptions storageOptions = builder.Configuration
+    .GetSection(StorageOptions.SectionName)
+    .Get<StorageOptions>() ?? new StorageOptions();
+
+string uploadsRoot = Path.GetFullPath(
+    Path.Combine(builder.Environment.ContentRootPath, storageOptions.Local.Path));
+string uploadsRequestPath =
+    "/" + storageOptions.Local.PublicBasePath.Trim('/');
+
+Directory.CreateDirectory(uploadsRoot);
 
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
@@ -144,17 +152,21 @@ app.UseForwardedHeaders();
 app.UseExceptionHandler();
 app.UseRateLimiter();
 
-app.UseStaticFiles(new StaticFileOptions
+if (!storageOptions.Private)
 {
-    FileProvider = new PhysicalFileProvider(uploadsRoot),
-    RequestPath = "/uploads",
-    ContentTypeProvider = contentTypeProvider,
-    DefaultContentType = "application/octet-stream",
-    OnPrepareResponse = context =>
+    app.UseStaticFiles(new StaticFileOptions
     {
-        context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-    }
-});
+        FileProvider = new PhysicalFileProvider(uploadsRoot),
+        RequestPath = uploadsRequestPath,
+        ContentTypeProvider = contentTypeProvider,
+        DefaultContentType = "application/octet-stream",
+        OnPrepareResponse = context =>
+        {
+            context.Context.Response.Headers["X-Content-Type-Options"] =
+                "nosniff";
+        }
+    });
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -173,6 +185,7 @@ app.MapServerEndpoints();
 app.MapChannelEndpoints(); 
 app.MapMessageEndpoints();
 app.MapUserEndpoints(); 
+app.MapFileEndpoints(storageOptions.PrivateBasePath);
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();

@@ -1,4 +1,7 @@
+using Microsoft.Extensions.Options;
+using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
 using Qwek.Applications.UseCases;
 using Qwek.Interfaces.Web;
 
@@ -6,8 +9,6 @@ namespace Qwek.Interfaces.Endpoints;
 
 public static class UserEndpoints
 {
-    private const long MaxAvatarBytes = 5 * 1024 * 1024;
-
     private static readonly HashSet<string> AvatarExtensions =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -66,7 +67,8 @@ public static class UserEndpoints
     private static async Task<IResult> UploadAvatarAsync(
         IFormFile file,
         Users users,
-        IWebHostEnvironment environment,
+        IFileStorage storage,
+        IOptions<StorageOptions> options,
         CancellationToken ct)
     {
         if (file is null || file.Length == 0)
@@ -74,9 +76,12 @@ public static class UserEndpoints
             return Fail("Choose an image file to upload.");
         }
 
-        if (file.Length > MaxAvatarBytes)
+        long maxAvatarBytes = options.Value.MaxAvatarBytes;
+
+        if (file.Length > maxAvatarBytes)
         {
-            return Fail("Avatar must be 5 MB or smaller.");
+            long maxMegabytes = maxAvatarBytes / (1024 * 1024);
+            return Fail($"Avatar must be {maxMegabytes} MB or smaller.");
         }
 
         string extension = Path.GetExtension(file.FileName);
@@ -100,54 +105,66 @@ public static class UserEndpoints
             return Results.NotFound();
         }
 
-        string avatarDirectory = Path.Combine(
-            environment.ContentRootPath, "uploads", "avatars");
-        Directory.CreateDirectory(avatarDirectory);
-
-        string fileName =
-            $"{profile.UserId}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}" +
-            extension.ToLowerInvariant();
-        string filePath = Path.Combine(avatarDirectory, fileName);
-
-        await using (FileStream stream = File.Create(filePath))
+        string contentType = extension.ToLowerInvariant() switch
         {
-            await file.CopyToAsync(stream, ct);
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            _ => "image/jpeg"
+        };
+
+        string avatarUrl;
+
+        await using (Stream stream = file.OpenReadStream())
+        {
+            avatarUrl = await storage.SaveAsync(
+                "avatars", file.FileName, file.Length,
+                contentType, stream, ct);
         }
 
-        DeletePreviousAvatar(profile.AvatarUrl, avatarDirectory);
+        ProfileUpdateResult result;
 
-        ProfileUpdateResult result = await users.UpdateAvatarAsync(
-            $"/uploads/avatars/{fileName}", ct);
+        try
+        {
+            result = await users.UpdateAvatarAsync(avatarUrl, ct);
+        }
+        catch
+        {
+            try
+            {
+                await storage.DeleteAsync(
+                    avatarUrl, CancellationToken.None);
+            }
+            catch
+            {
+            }
+
+            throw;
+        }
+
+        if (!result.Succeeded)
+        {
+            try
+            {
+                await storage.DeleteAsync(
+                    avatarUrl, CancellationToken.None);
+            }
+            catch
+            {
+            }
+
+            return ToResult(result);
+        }
+
+        try
+        {
+            await storage.DeleteAsync(
+                profile.AvatarUrl, CancellationToken.None);
+        }
+        catch
+        {
+        }
 
         return ToResult(result);
-    }
-
-    private static void DeletePreviousAvatar(
-        string? avatarUrl,
-        string avatarDirectory)
-    {
-        const string prefix = "/uploads/avatars/";
-
-        if (string.IsNullOrWhiteSpace(avatarUrl) ||
-            !avatarUrl.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        string? previous = avatarUrl[prefix.Length..].Split('?')[0];
-        string fileName = Path.GetFileName(previous);
-
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            return;
-        }
-
-        string path = Path.Combine(avatarDirectory, fileName);
-
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
     }
 
     private static IResult Fail(string error) =>

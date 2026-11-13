@@ -105,6 +105,18 @@ public class Messages
         return dto;
     }
 
+    public async Task EnsureAttachmentAccessAsync(
+        string attachmentUrl, CancellationToken ct)
+    {
+        string userId = GetUserId();
+        Message message = await _messageRepository
+            .GetByAttachmentUrlAsync(attachmentUrl, ct)
+            ?? throw new KeyNotFoundException("Attachment was not found");
+
+        Channel channel = await GetChannelAsync(message.ChannelId, ct);
+        await EnsureMemberAsync(userId, channel.ServerId, ct);
+    }
+
     public async Task<IReadOnlyList<MessageDto>> GetHistoryAsync(
         int channelId, int? beforeId, int limit, CancellationToken ct
     )

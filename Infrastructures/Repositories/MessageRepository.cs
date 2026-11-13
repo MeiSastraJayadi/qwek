@@ -14,6 +14,11 @@ public class MessageRepository : IMessageRepository
     public Task<Message?> GetByIdAsync(int id, CancellationToken ct) => 
         _db.Messages.FirstOrDefaultAsync(m => m.Id == id, ct);
 
+    public Task<Message?> GetByAttachmentUrlAsync(
+        string attachmentUrl, CancellationToken ct) =>
+        _db.Messages.FirstOrDefaultAsync(
+            message => message.AttachmentUrl == attachmentUrl, ct);
+
     public async Task<IReadOnlyList<Message>> GetByIdsAsync(
         IReadOnlyCollection<int> ids, CancellationToken ct)
     {

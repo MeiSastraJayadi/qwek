@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
 using Qwek.Applications.UseCases;
 using Qwek.Interfaces.Web;
 
@@ -7,8 +10,6 @@ namespace Qwek.Interfaces.Endpoints;
 
 public static class MessageEndpoints
 {
-    private const long MaxAttachmentBytes = 25 * 1024 * 1024;
-
     private static readonly Dictionary<string, string> AttachmentContentTypes =
         new(StringComparer.OrdinalIgnoreCase)
         {
@@ -82,7 +83,8 @@ public static class MessageEndpoints
         IFormFile file,
         [FromForm] string? content,
         Messages messages,
-        IWebHostEnvironment environment,
+        IFileStorage storage,
+        IOptions<StorageOptions> options,
         CancellationToken ct)
     {
         if (file is null || file.Length == 0)
@@ -93,11 +95,17 @@ public static class MessageEndpoints
             });
         }
 
-        if (file.Length > MaxAttachmentBytes)
+        long maxAttachmentBytes = options.Value.MaxAttachmentBytes;
+
+        if (file.Length > maxAttachmentBytes)
         {
+            long maxMegabytes = maxAttachmentBytes / (1024 * 1024);
             return Results.BadRequest(new
             {
-                errors = new[] { "Files must be 25 MB or smaller." }
+                errors = new[]
+                {
+                    $"Files must be {maxMegabytes} MB or smaller."
+                }
             });
         }
 
@@ -122,16 +130,13 @@ public static class MessageEndpoints
             });
         }
 
-        string directory = Path.Combine(
-            environment.ContentRootPath, "uploads", "attachments");
-        Directory.CreateDirectory(directory);
+        string attachmentUrl;
 
-        string storedName = $"{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
-        string path = Path.Combine(directory, storedName);
-
-        await using (FileStream stream = File.Create(path))
+        await using (Stream stream = file.OpenReadStream())
         {
-            await file.CopyToAsync(stream, ct);
+            attachmentUrl = await storage.SaveAsync(
+                "attachments", file.FileName, file.Length,
+                contentType!, stream, ct);
         }
 
         try
@@ -140,7 +145,7 @@ public static class MessageEndpoints
                 channelId,
                 content ?? string.Empty,
                 ct,
-                $"/uploads/attachments/{storedName}",
+                attachmentUrl,
                 Path.GetFileName(file.FileName),
                 contentType,
                 file.Length);
@@ -151,7 +156,8 @@ public static class MessageEndpoints
         {
             try
             {
-                File.Delete(path);
+                await storage.DeleteAsync(
+                    attachmentUrl, CancellationToken.None);
             }
             catch
             {
@@ -196,42 +202,20 @@ public static class MessageEndpoints
     private static async Task<IResult> DeleteAsync(
         int messageId,
         Messages messages,
-        IWebHostEnvironment environment,
+        IFileStorage storage,
         CancellationToken ct)
     {
         string? attachmentUrl = await messages.DeleteAsync(messageId, ct);
-        DeleteAttachment(environment, attachmentUrl);
+
+        try
+        {
+            await storage.DeleteAsync(attachmentUrl, ct);
+        }
+        catch
+        {
+        }
+
         return Results.NoContent();
-    }
-
-    private static void DeleteAttachment(
-        IWebHostEnvironment environment,
-        string? attachmentUrl)
-    {
-        const string prefix = "/uploads/attachments/";
-
-        if (string.IsNullOrWhiteSpace(attachmentUrl) ||
-            !attachmentUrl.StartsWith(
-                prefix, StringComparison.OrdinalIgnoreCase))
-        {
-            return;
-        }
-
-        string fileName = Path.GetFileName(
-            attachmentUrl[prefix.Length..].Split('?')[0]);
-
-        if (string.IsNullOrWhiteSpace(fileName))
-        {
-            return;
-        }
-
-        string path = Path.Combine(
-            environment.ContentRootPath, "uploads", "attachments", fileName);
-
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
     }
 
     public sealed record SendMessageRequest(

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Qwek.Applications.Commons;
 
 namespace Qwek.Interfaces.Web;
 
@@ -20,6 +21,8 @@ public class GlobalExceptionHandler : IExceptionHandler
         {
             KeyNotFoundException => (StatusCodes.Status404NotFound, "Not Found"), 
             UnauthorizedAccessException => (StatusCodes.Status403Forbidden, "Forbidden"), 
+            StorageQuotaExceededException => (
+                StatusCodes.Status507InsufficientStorage, "Storage Limit Exceeded"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Bad Request"), 
             _ => (StatusCodes.Status500InternalServerError, "Internal Server Error") 
         };
