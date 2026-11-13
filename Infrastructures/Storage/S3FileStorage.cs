@@ -133,7 +133,7 @@ public sealed class S3FileStorage : FileStorageBase, IDisposable
             ListObjectsV2Response response =
                 await _client.ListObjectsV2Async(request, ct);
 
-            total += response.S3Objects.Sum(item => item.Size ?? 0);
+            total += response.S3Objects?.Sum(item => item.Size ?? 0) ?? 0;
 
             continuationToken = response.IsTruncated == true
                 ? response.NextContinuationToken
