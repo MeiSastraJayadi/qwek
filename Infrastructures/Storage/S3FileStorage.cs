@@ -3,6 +3,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Options;
+using Qwek.Applications.Commons;
 using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Ports;
 
@@ -142,6 +143,9 @@ public sealed class S3FileStorage : FileStorageBase, IDisposable
 
         return total;
     }
+
+    public override bool IsManagedUrl(string? url, string folder) =>
+        StoragePaths.IsManagedRelativePath(GetKey(url), folder);
 
     private string? GetKey(string? url)
     {

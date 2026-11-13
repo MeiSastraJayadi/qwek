@@ -333,6 +333,48 @@ namespace Qwek.Migrations
                     b.ToTable("message_reactions", (string)null);
                 });
 
+            modelBuilder.Entity("Qwek.Domains.Entities.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("token_hash");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_refresh_tokens");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique()
+                        .HasDatabaseName("ix_refresh_tokens_token_hash");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_refresh_tokens_user_id");
+
+                    b.ToTable("refresh_tokens", (string)null);
+                });
+
             modelBuilder.Entity("Qwek.Domains.Entities.Server", b =>
                 {
                     b.Property<Guid>("Id")
@@ -402,6 +444,38 @@ namespace Qwek.Migrations
                     b.ToTable("server_members", (string)null);
                 });
 
+            modelBuilder.Entity("Qwek.Domains.Entities.StorageReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<long>("Bytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("bytes");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_storage_reservations");
+
+                    b.HasIndex("ExpiresAt")
+                        .HasDatabaseName("ix_storage_reservations_expires_at");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_storage_reservations_user_id");
+
+                    b.ToTable("storage_reservations", (string)null);
+                });
+
             modelBuilder.Entity("Qwek.Models.PersonalUser", b =>
                 {
                     b.Property<string>("Id")
@@ -411,6 +485,10 @@ namespace Qwek.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("integer")
                         .HasColumnName("access_failed_count");
+
+                    b.Property<long>("AvatarSize")
+                        .HasColumnType("bigint")
+                        .HasColumnName("avatar_size");
 
                     b.Property<string>("AvatarUrl")
                         .HasColumnType("text")
@@ -478,6 +556,10 @@ namespace Qwek.Migrations
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("text")
                         .HasColumnName("security_stamp");
+
+                    b.Property<int>("TokenVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("token_version");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("boolean")
@@ -612,6 +694,16 @@ namespace Qwek.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_message_reactions_asp_net_users_personal_user_id");
+                });
+
+            modelBuilder.Entity("Qwek.Domains.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("Qwek.Models.PersonalUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_refresh_tokens_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Qwek.Domains.Entities.Server", b =>

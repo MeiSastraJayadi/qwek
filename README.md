@@ -11,7 +11,7 @@ A simple Discord-like real-time chat backend built with ASP.NET Core.
 
 ## Features
 
-- Register / login with JWT
+- Register / login with JWT, refresh tokens, and logout revocation
 - User profiles: display name, username, avatar
 - Servers, channels, and membership
 - Real-time messaging over SignalR
@@ -36,10 +36,14 @@ Interfaces/      HTTP endpoints, SignalR hub, and web adapters
 | `Jwt:Audience` | JWT audience |
 | `Jwt:Key` | Signing key (32+ characters) |
 | `Jwt:ExpiryMinutes` | Access token lifetime |
+| `Jwt:RefreshExpiryDays` | Refresh token lifetime |
+| `Cors:AllowedOrigins` | Comma-separated allowed browser origins |
+| `Antivirus:Enabled` | Enable ClamAV scanning for uploads |
 | `Storage:Provider` | `Local` (default) or `S3` |
 | `Storage:Private` | Serve files through authenticated `/api/files` instead of public URLs |
 | `Storage:PrivateBasePath` | URL prefix for private file routes |
 | `Storage:MaxTotalBytes` | Hard cap for all stored uploads |
+| `Storage:MaxUserBytes` | Per-user attachment quota |
 | `Storage:MaxAttachmentBytes` | Maximum attachment size |
 | `Storage:MaxAvatarBytes` | Maximum avatar size |
 | `Storage:Local:Path` | Local upload directory |
@@ -53,7 +57,14 @@ Values can be set in `appsettings.json` or with `ConnectionStrings__DefaultConne
 Uploads use the local disk by default (`uploads/`, mounted as a Docker volume).
 Before every upload the current usage is checked against `Storage:MaxTotalBytes`
 and rejected with `507 Insufficient Storage` when the cap would be exceeded.
-Local disk is scanned for actual usage, so external changes are respected.
+Uploads are also checked against `Storage:MaxUserBytes` per user, including
+the avatar. Quota reservations are stored in PostgreSQL under an advisory lock,
+so the limits hold across multiple API instances. Local disk is scanned for
+actual usage, so external changes are respected.
+
+Allowed attachments are limited to images (PNG, JPEG, GIF, WebP), PDF, plain
+text/Markdown/CSV, MP4/WebM/MOV, and MP3/WAV/OGG. Archives and Office documents
+are rejected. Avatars are limited to PNG, JPEG, and GIF.
 
 Set `Storage:Private=true` for private buckets. Files are then served through
 `GET /api/files/...` and require `Authorization: Bearer <token>`; attachment
@@ -74,6 +85,15 @@ STORAGE_S3_SECRET_ACCESS_KEY=<secret-key>
 
 `STORAGE_S3_PUBLIC_BASE_URL` is only required when `STORAGE_PRIVATE=false`.
 
+For malware scanning, enable ClamAV:
+
+```bash
+docker compose --profile antivirus up -d
+```
+
+Then set `ANTIVIRUS_ENABLED=true`. Infected uploads are rejected with `422`.
+ClamAV downloads signatures on first start and needs roughly 1 GB of RAM.
+
 Use a dedicated bucket because the quota is calculated from the entire bucket.
 Keep `Storage:MaxTotalBytes` slightly below your provider limit, for example
 `9000000000` for R2's 10 GB free tier.
@@ -90,7 +110,7 @@ API listens on `http://localhost:5206`; OpenAPI is enabled in Development.
 
 | Area | Routes |
 |---|---|
-| Auth | `POST /api/auth/register`, `POST /api/auth/login` |
+| Auth | `POST /api/auth/register`, `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | Users | `GET /api/users/me`, `PATCH /api/users/me/display-name`, `/username`, `/avatar`, `POST /avatar/upload` |
 | Servers | `GET/POST /api/servers`, `GET /api/servers/{id}/members`, `GET /api/servers/{id}/invite`, `POST /api/servers/{id}/join`, `/leave`, `DELETE /api/servers/{id}` |
 | Files | `GET /api/files/avatars/{name}`, `GET /api/files/attachments/{name}` |
@@ -130,6 +150,8 @@ The app trusts loopback proxies for `X-Forwarded-For` and `X-Forwarded-Proto`.
 If the proxy runs in another container, set its address with
 `ForwardedHeaders__KnownProxies__0=<proxy-ip>`.
 
-Auth endpoints are rate limited to 10 requests per minute per IP. Keep `.env`
+All requests are limited to 300 per minute, auth to 10, message sends to 60,
+and uploads to 20 (per user, or per IP for anonymous requests). SignalR
+`JoinChannel` and `Typing` calls are throttled per user as well. Keep `.env`
 private (`chmod 600`), use a database user with minimal privileges, and rotate
 `JWT_KEY` immediately if it is ever exposed.

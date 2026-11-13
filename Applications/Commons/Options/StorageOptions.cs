@@ -8,6 +8,7 @@ public class StorageOptions
     public bool Private { get; set; }
     public string PrivateBasePath { get; set; } = "/api/files";
     public long MaxTotalBytes { get; set; } = 9_000_000_000;
+    public long MaxUserBytes { get; set; } = 500 * 1024 * 1024;
     public long MaxAttachmentBytes { get; set; } = 25 * 1024 * 1024;
     public long MaxAvatarBytes { get; set; } = 5 * 1024 * 1024;
     public LocalStorageOptions Local { get; set; } = new();

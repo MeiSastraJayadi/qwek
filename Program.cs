@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
+using Qwek.Applications.Commons;
 using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Ports;
 using Qwek.Applications.UseCases;
@@ -71,6 +73,33 @@ builder.Services
                 }
 
                 return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                string? userId = context.Principal?
+                    .FindFirstValue(ClaimTypes.NameIdentifier);
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    context.Fail("Invalid token");
+                    return;
+                }
+
+                string? rawVersion = context.Principal?
+                    .FindFirstValue(AuthClaims.TokenVersion);
+                int tokenVersion = int.TryParse(rawVersion, out int parsed)
+                    ? parsed
+                    : 0;
+
+                IIdentityService identity = context.HttpContext
+                    .RequestServices.GetRequiredService<IIdentityService>();
+                int currentVersion = await identity.GetTokenVersionAsync(
+                    userId, context.HttpContext.RequestAborted);
+
+                if (currentVersion != tokenVersion)
+                {
+                    context.Fail("Token has been revoked");
+                }
             }
         };
 
@@ -99,16 +128,33 @@ builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-    options.AddPolicy("auth", httpContext =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: _ => new FixedWindowRateLimiterOptions
-            {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
-                QueueLimit = 0
-            }));
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(
+        context => RateLimitPolicy.Create(context, permitLimit: 300));
+
+    options.AddPolicy(RateLimitPolicy.Auth, context =>
+        RateLimitPolicy.Create(context, permitLimit: 10));
+    options.AddPolicy(RateLimitPolicy.Messages, context =>
+        RateLimitPolicy.Create(context, permitLimit: 60));
+    options.AddPolicy(RateLimitPolicy.Uploads, context =>
+        RateLimitPolicy.Create(context, permitLimit: 20));
 });
+
+string[] allowedOrigins = (builder.Configuration["Cors:AllowedOrigins"] ?? "")
+    .Split(
+        ',',
+        StringSplitOptions.RemoveEmptyEntries |
+        StringSplitOptions.TrimEntries);
+
+if (allowedOrigins.Length > 0)
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(policy =>
+            policy.WithOrigins(allowedOrigins)
+                .AllowAnyHeader()
+                .AllowAnyMethod());
+    });
+}
 
 
 builder.Services.AddW3CLogging(logging =>
@@ -130,6 +176,7 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>(); 
 builder.Services.AddScoped<IRealtimeNotifier, RealtimeNotifier>();
 builder.Services.AddSingleton<PresenceTracker>();
+builder.Services.AddSingleton<HubRateLimiter>();
 
 builder.Services.AddScoped<Auth>(); 
 builder.Services.AddScoped<Servers>(); 
@@ -150,7 +197,6 @@ contentTypeProvider.Mappings[".mp3"] = "audio/mpeg";
 
 app.UseForwardedHeaders();
 app.UseExceptionHandler();
-app.UseRateLimiter();
 
 if (!storageOptions.Private)
 {
@@ -170,6 +216,13 @@ if (!storageOptions.Private)
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+if (allowedOrigins.Length > 0)
+{
+    app.UseCors();
+}
+
+app.UseRateLimiter();
 app.UseW3CLogging();
 
 // Configure the HTTP request pipeline.

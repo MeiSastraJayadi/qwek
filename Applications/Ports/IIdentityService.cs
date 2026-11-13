@@ -19,5 +19,11 @@ public interface IIdentityService
         string userId, string username, CancellationToken ct);
 
     Task<ProfileUpdateResult> UpdateAvatarAsync(
-        string userId, string? avatarUrl, CancellationToken ct);
+        string userId, string? avatarUrl, long avatarSize, CancellationToken ct);
+
+    Task<int> GetTokenVersionAsync(string userId, CancellationToken ct);
+
+    Task<bool> IncrementTokenVersionAsync(string userId, CancellationToken ct);
+
+    Task<long> GetAvatarSizeAsync(string userId, CancellationToken ct);
 }

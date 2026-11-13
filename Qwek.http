@@ -174,5 +174,17 @@ Content-Type: application/json
   "password": "wrong-password"
 }
 
+### Refresh the access token
+POST {{Qwek_HostAddress}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{login.response.body.$.refreshToken}}"
+}
+
 ### No token - expect 401
 GET {{Qwek_HostAddress}}/api/servers
+
+### Logout - revokes all tokens
+POST {{Qwek_HostAddress}}/api/auth/logout
+Authorization: Bearer {{token}}

@@ -1,3 +1,7 @@
 ﻿namespace Qwek.Applications.Models;
 
-public record class LoginResult(string AccessToken, AuthenticatedUser User);
+public record class LoginResult(
+    string AccessToken,
+    AuthenticatedUser User,
+    string RefreshToken,
+    DateTime RefreshTokenExpiresAt);

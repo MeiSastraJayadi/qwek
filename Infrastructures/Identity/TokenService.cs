@@ -4,6 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Qwek.Applications.Commons;
 using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Ports;
 
@@ -15,12 +16,14 @@ public class TokenService : ITokenService
     
     public TokenService(IOptions<JwtOptions> options) => _options = options.Value;
 
-    public string CreateAccessToken(string userId, string username)
+    public string CreateAccessToken(
+        string userId, string username, int tokenVersion)
     {
         Claim[] claims = [
             new(JwtRegisteredClaimNames.Sub, userId), 
             new(ClaimTypes.NameIdentifier, userId), 
             new(ClaimTypes.Name, username), 
+            new(AuthClaims.TokenVersion, tokenVersion.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         ];
 

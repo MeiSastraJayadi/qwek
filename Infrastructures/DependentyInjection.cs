@@ -7,6 +7,7 @@ using Qwek.Domains.Interfaces;
 using Qwek.Infrastructures.Identity;
 using Qwek.Infrastructures.Persistence;
 using Qwek.Infrastructures.Repositories;
+using Qwek.Infrastructures.Security;
 using Qwek.Infrastructures.Services;
 using Qwek.Infrastructures.Storage;
 using Qwek.Models;
@@ -73,6 +74,12 @@ public static class DependentyInjection
 
         services.AddScoped<IIdentityService, IdentityService>(); 
         services.AddScoped<ITokenService, TokenService>(); 
+        services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+        services.AddScoped<IStorageQuota, StorageQuota>();
+        services.Configure<AntivirusOptions>(
+            configuration.GetSection(AntivirusOptions.SectionName)
+        );
+        services.AddSingleton<IFileScanner, ClamAvFileScanner>();
         services.AddScoped<IUserDirectory, UserDirectory>();
         services.AddSingleton<IInviteCodeGenerator, InviteCodeGenerator>();
 

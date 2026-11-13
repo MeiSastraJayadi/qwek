@@ -11,10 +11,17 @@ services:
       Jwt__Audience: ${JWT_AUDIENCE:-Qwek}
       Jwt__Key: ${JWT_KEY:?JWT_KEY is required, copy .env.example to .env and set it}
       Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
+      Jwt__RefreshExpiryDays: ${JWT_REFRESH_EXPIRY_DAYS:-30}
+      Cors__AllowedOrigins: ${CORS_ALLOWED_ORIGINS:-}
+      Antivirus__Enabled: ${ANTIVIRUS_ENABLED:-false}
+      Antivirus__Host: ${ANTIVIRUS_HOST:-clamav}
+      Antivirus__Port: ${ANTIVIRUS_PORT:-3310}
+      Antivirus__TimeoutSeconds: ${ANTIVIRUS_TIMEOUT_SECONDS:-30}
       Storage__Provider: ${STORAGE_PROVIDER:-Local}
       Storage__Private: ${STORAGE_PRIVATE:-false}
       Storage__PrivateBasePath: ${STORAGE_PRIVATE_BASE_PATH:-/api/files}
       Storage__MaxTotalBytes: ${STORAGE_MAX_TOTAL_BYTES:-9000000000}
+      Storage__MaxUserBytes: ${STORAGE_MAX_USER_BYTES:-524288000}
       Storage__MaxAttachmentBytes: ${STORAGE_MAX_ATTACHMENT_BYTES:-26214400}
       Storage__MaxAvatarBytes: ${STORAGE_MAX_AVATAR_BYTES:-5242880}
       Storage__Local__Path: ${STORAGE_LOCAL_PATH:-uploads}
@@ -31,6 +38,14 @@ services:
       - uploads:/app/uploads
       - logs:/app/LogFiles
 
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    profiles: ["antivirus"]
+    volumes:
+      - clamdb:/var/lib/clamav
+
 volumes:
   uploads:
   logs:
+  clamdb:

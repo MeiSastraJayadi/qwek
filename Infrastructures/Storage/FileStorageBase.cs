@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using Qwek.Applications.Commons;
 using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Ports;
 
@@ -7,9 +6,6 @@ namespace Qwek.Infrastructures.Storage;
 
 public abstract class FileStorageBase : IFileStorage
 {
-    private readonly SemaphoreSlim _quotaLock = new(1, 1);
-    private long _reservedBytes;
-
     protected FileStorageBase(IOptions<StorageOptions> options) =>
         Options = options.Value;
 
@@ -39,17 +35,8 @@ public abstract class FileStorageBase : IFileStorage
 
         string storedName = $"{Guid.NewGuid():N}{extension}";
 
-        await ReserveAsync(length, ct);
-
-        try
-        {
-            return await SaveCoreAsync(
-                folder, storedName, length, contentType, content, ct);
-        }
-        finally
-        {
-            Interlocked.Add(ref _reservedBytes, -length);
-        }
+        return await SaveCoreAsync(
+            folder, storedName, length, contentType, content, ct);
     }
 
     public Task<StoredFile?> OpenReadAsync(string url, CancellationToken ct) =>
@@ -58,27 +45,10 @@ public abstract class FileStorageBase : IFileStorage
     public Task DeleteAsync(string? url, CancellationToken ct) =>
         DeleteCoreAsync(url, ct);
 
-    private async Task ReserveAsync(long length, CancellationToken ct)
-    {
-        await _quotaLock.WaitAsync(ct);
+    public Task<long> GetUsedBytesAsync(CancellationToken ct) =>
+        GetUsedBytesCoreAsync(ct);
 
-        try
-        {
-            long used = await GetUsedBytesCoreAsync(ct);
-            long reserved = Interlocked.Read(ref _reservedBytes);
-
-            if (used + reserved + length > Options.MaxTotalBytes)
-            {
-                throw new StorageQuotaExceededException(Options.MaxTotalBytes);
-            }
-
-            Interlocked.Add(ref _reservedBytes, length);
-        }
-        finally
-        {
-            _quotaLock.Release();
-        }
-    }
+    public abstract bool IsManagedUrl(string? url, string folder);
 
     protected abstract Task<string> SaveCoreAsync(
         string folder, string storedName, long length, string contentType,

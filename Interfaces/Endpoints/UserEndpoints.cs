@@ -25,7 +25,9 @@ public static class UserEndpoints
         me.MapPatch("/display-name", UpdateDisplayNameAsync);
         me.MapPatch("/username", UpdateUsernameAsync);
         me.MapPatch("/avatar", UpdateAvatarAsync);
-        me.MapPost("/avatar/upload", UploadAvatarAsync).DisableAntiforgery();
+        me.MapPost("/avatar/upload", UploadAvatarAsync)
+            .DisableAntiforgery()
+            .RequireRateLimiting("uploads");
 
         return app;
     }
@@ -56,10 +58,36 @@ public static class UserEndpoints
     }
 
     private static async Task<IResult> UpdateAvatarAsync(
-        UpdateAvatarRequest request, Users users, CancellationToken ct)
+        UpdateAvatarRequest request,
+        Users users,
+        IFileStorage storage,
+        CancellationToken ct)
     {
-        ProfileUpdateResult result = await users
-            .UpdateAvatarAsync(request.AvatarUrl, ct);
+        if (!string.IsNullOrWhiteSpace(request.AvatarUrl))
+        {
+            return Fail("Use the avatar upload endpoint to change your avatar.");
+        }
+
+        UserProfile? profile = await users.GetProfileAsync(ct);
+
+        if (profile is null)
+        {
+            return Results.NotFound();
+        }
+
+        ProfileUpdateResult result = await users.ClearAvatarAsync(ct);
+
+        if (result.Succeeded && profile.AvatarUrl is not null)
+        {
+            try
+            {
+                await storage.DeleteAsync(
+                    profile.AvatarUrl, CancellationToken.None);
+            }
+            catch
+            {
+            }
+        }
 
         return ToResult(result);
     }
@@ -68,6 +96,9 @@ public static class UserEndpoints
         IFormFile file,
         Users users,
         IFileStorage storage,
+        IFileScanner scanner,
+        IStorageQuota quota,
+        ICurrentUser currentUser,
         IOptions<StorageOptions> options,
         CancellationToken ct)
     {
@@ -105,6 +136,13 @@ public static class UserEndpoints
             return Results.NotFound();
         }
 
+        string userId = currentUser.UserId ?? string.Empty;
+
+        if (!currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(userId))
+        {
+            return Results.Unauthorized();
+        }
+
         string contentType = extension.ToLowerInvariant() switch
         {
             ".png" => "image/png",
@@ -112,20 +150,42 @@ public static class UserEndpoints
             _ => "image/jpeg"
         };
 
+        await using (Stream scanStream = file.OpenReadStream())
+        {
+            if (!await scanner.IsCleanAsync(scanStream, ct))
+            {
+                return Results.UnprocessableEntity(
+                    new ProfileUpdateResult(
+                        false,
+                        ["Avatar failed the security scan."],
+                        null));
+            }
+        }
+
+        long previousAvatarSize = await users.GetAvatarSizeAsync(ct);
+        StorageQuotaReservation reservation = await quota.ReserveAsync(
+            userId, file.Length, previousAvatarSize, ct);
+
         string avatarUrl;
 
-        await using (Stream stream = file.OpenReadStream())
+        try
         {
+            await using Stream stream = file.OpenReadStream();
             avatarUrl = await storage.SaveAsync(
                 "avatars", file.FileName, file.Length,
                 contentType, stream, ct);
+        }
+        catch
+        {
+            await ReleaseQuietlyAsync(quota, reservation);
+            throw;
         }
 
         ProfileUpdateResult result;
 
         try
         {
-            result = await users.UpdateAvatarAsync(avatarUrl, ct);
+            result = await users.SetAvatarAsync(avatarUrl, file.Length, ct);
         }
         catch
         {
@@ -138,6 +198,7 @@ public static class UserEndpoints
             {
             }
 
+            await ReleaseQuietlyAsync(quota, reservation);
             throw;
         }
 
@@ -152,8 +213,11 @@ public static class UserEndpoints
             {
             }
 
+            await ReleaseQuietlyAsync(quota, reservation);
             return ToResult(result);
         }
+
+        await CompleteQuietlyAsync(quota, reservation);
 
         try
         {
@@ -165,6 +229,32 @@ public static class UserEndpoints
         }
 
         return ToResult(result);
+    }
+
+    private static async Task CompleteQuietlyAsync(
+        IStorageQuota quota, StorageQuotaReservation reservation)
+    {
+        try
+        {
+            await quota.CompleteAsync(
+                reservation, CancellationToken.None);
+        }
+        catch
+        {
+        }
+    }
+
+    private static async Task ReleaseQuietlyAsync(
+        IStorageQuota quota, StorageQuotaReservation reservation)
+    {
+        try
+        {
+            await quota.ReleaseAsync(
+                reservation, CancellationToken.None);
+        }
+        catch
+        {
+        }
     }
 
     private static IResult Fail(string error) =>

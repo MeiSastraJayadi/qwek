@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Qwek.Applications.Commons;
 using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Ports;
 using Qwek.Applications.UseCases;
@@ -28,7 +29,7 @@ public static class FileEndpoints
         IOptions<StorageOptions> options,
         CancellationToken ct)
     {
-        if (!IsValidFileName(fileName))
+        if (!StoragePaths.IsSafeFileName(fileName))
         {
             return Results.NotFound();
         }
@@ -49,7 +50,7 @@ public static class FileEndpoints
         Messages messages,
         CancellationToken ct)
     {
-        if (!IsValidFileName(fileName))
+        if (!StoragePaths.IsSafeFileName(fileName))
         {
             return Results.NotFound();
         }
@@ -67,11 +68,4 @@ public static class FileEndpoints
 
     private static string GetBasePath(IOptions<StorageOptions> options) =>
         "/" + options.Value.PrivateBasePath.Trim('/');
-
-    private static bool IsValidFileName(string fileName) =>
-        !string.IsNullOrWhiteSpace(fileName) &&
-        fileName is not "." and not ".." &&
-        fileName == Path.GetFileName(fileName) &&
-        !fileName.Contains('\\') &&
-        fileName.IndexOfAny(Path.GetInvalidFileNameChars()) < 0;
 }

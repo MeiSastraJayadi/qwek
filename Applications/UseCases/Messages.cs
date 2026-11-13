@@ -24,7 +24,7 @@ public class Messages
         IMessageReactionRepository reactionRepository,
         IChannelRepository channelRepository, 
         IServerRepository serverRepository, 
-        IServerMemberRepository serverMemberRepository, 
+        IServerMemberRepository serverMemberRepository,
         IUnitOfWork unitOfWork, 
         ICurrentUser currentUser, 
         IRealtimeNotifier realtimeNotifier,

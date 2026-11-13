@@ -110,7 +110,7 @@ public class IdentityService : IIdentityService
     }
 
     public async Task<ProfileUpdateResult> UpdateAvatarAsync(
-        string userId, string? avatarUrl, CancellationToken ct
+        string userId, string? avatarUrl, long avatarSize, CancellationToken ct
     )
     {
         ct.ThrowIfCancellationRequested();
@@ -120,8 +120,43 @@ public class IdentityService : IIdentityService
         if (user is null)
             return Fail("User was not found");
 
-        user.AvatarUrl = string.IsNullOrWhiteSpace(avatarUrl) ? null : avatarUrl.Trim();
+        bool hasAvatar = !string.IsNullOrWhiteSpace(avatarUrl);
+        user.AvatarUrl = hasAvatar ? avatarUrl!.Trim() : null;
+        user.AvatarSize = hasAvatar ? avatarSize : 0;
         return await SaveAsync(user);
+    }
+
+    public async Task<int> GetTokenVersionAsync(
+        string userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        PersonalUser? user = await _userManager.FindByIdAsync(userId);
+        return user?.TokenVersion ?? 0;
+    }
+
+    public async Task<bool> IncrementTokenVersionAsync(
+        string userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        PersonalUser? user = await _userManager.FindByIdAsync(userId);
+
+        if (user is null)
+            return false;
+
+        user.TokenVersion++;
+        IdentityResult result = await _userManager.UpdateAsync(user);
+        return result.Succeeded;
+    }
+
+    public async Task<long> GetAvatarSizeAsync(
+        string userId, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+
+        PersonalUser? user = await _userManager.FindByIdAsync(userId);
+        return user?.AvatarSize ?? 0;
     }
 
     private async Task<ProfileUpdateResult> SaveAsync(PersonalUser user)

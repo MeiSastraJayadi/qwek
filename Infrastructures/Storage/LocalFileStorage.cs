@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Options;
+using Qwek.Applications.Commons;
 using Qwek.Applications.Commons.Options;
 using Qwek.Applications.Ports;
 
@@ -128,6 +129,9 @@ public sealed class LocalFileStorage : FileStorageBase
 
         return Task.FromResult(total);
     }
+
+    public override bool IsManagedUrl(string? url, string folder) =>
+        StoragePaths.IsManagedRelativePath(GetRelativePath(url), folder);
 
     private string? GetRelativePath(string? url)
     {

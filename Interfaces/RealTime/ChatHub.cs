@@ -15,24 +15,29 @@ public class ChatHub : Hub
     private readonly IChannelRepository _channels;
     private readonly IServerMemberRepository _members;
     private readonly IUserDirectory _users;
+    private readonly HubRateLimiter _rateLimiter;
 
     public ChatHub(
         PresenceTracker presence,
         IChannelRepository channels,
         IServerMemberRepository members,
-        IUserDirectory users)
+        IUserDirectory users,
+        HubRateLimiter rateLimiter)
     {
         _presence = presence;
         _channels = channels;
         _members = members;
         _users = users;
+        _rateLimiter = rateLimiter;
     }
 
     public async Task JoinChannel(int channelId)
     {
         string? userId = Context.UserIdentifier;
 
-        if (string.IsNullOrWhiteSpace(userId))
+        if (string.IsNullOrWhiteSpace(userId) ||
+            !_rateLimiter.TryAcquire(
+                userId, "join", 30, TimeSpan.FromMinutes(1)))
         {
             return;
         }
@@ -60,7 +65,9 @@ public class ChatHub : Hub
     {
         string? userId = Context.UserIdentifier;
 
-        if (string.IsNullOrWhiteSpace(userId))
+        if (string.IsNullOrWhiteSpace(userId) ||
+            !_rateLimiter.TryAcquire(
+                userId, "typing", 20, TimeSpan.FromSeconds(10)))
         {
             return;
         }

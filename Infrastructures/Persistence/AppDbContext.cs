@@ -14,6 +14,9 @@ public class AppDbContext : IdentityDbContext<PersonalUser>
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageReaction> MessageReactions => Set<MessageReaction>();
     public DbSet<ServerMember> ServerMembers => Set<ServerMember>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<StorageReservation> StorageReservations =>
+        Set<StorageReservation>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -102,6 +105,23 @@ public class AppDbContext : IdentityDbContext<PersonalUser>
                 .WithMany()
                 .HasForeignKey(reaction => reaction.PersonalUserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(token => token.TokenHash).IsUnique();
+            entity.HasIndex(token => token.UserId);
+
+            entity.HasOne<PersonalUser>()
+                .WithMany()
+                .HasForeignKey(token => token.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<StorageReservation>(entity =>
+        {
+            entity.HasIndex(reservation => reservation.UserId);
+            entity.HasIndex(reservation => reservation.ExpiresAt);
         });
 
         builder.Entity<ServerMember>(entity =>

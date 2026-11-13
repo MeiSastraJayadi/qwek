@@ -27,14 +27,7 @@ public static class MessageEndpoints
             [".mov"] = "video/quicktime",
             [".mp3"] = "audio/mpeg",
             [".wav"] = "audio/wav",
-            [".ogg"] = "audio/ogg",
-            [".doc"] = "application/msword",
-            [".docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            [".xls"] = "application/vnd.ms-excel",
-            [".xlsx"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            [".ppt"] = "application/vnd.ms-powerpoint",
-            [".pptx"] = "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-            [".zip"] = "application/zip"
+            [".ogg"] = "audio/ogg"
         };
 
     public static IEndpointRouteBuilder MapMessageEndpoints(
@@ -47,9 +40,11 @@ public static class MessageEndpoints
             .WithTags("Messages")
             .RequireAuthorization();
 
-        channelMessages.MapPost("/", SendAsync); 
+        channelMessages.MapPost("/", SendAsync)
+            .RequireRateLimiting("messages"); 
         channelMessages.MapPost("/upload", SendAttachmentAsync)
-            .DisableAntiforgery();
+            .DisableAntiforgery()
+            .RequireRateLimiting("uploads");
         channelMessages.MapGet("/", GetHistoryAsync);
 
         RouteGroupBuilder messages = app.MapGroup("/api/messages")
@@ -84,6 +79,9 @@ public static class MessageEndpoints
         [FromForm] string? content,
         Messages messages,
         IFileStorage storage,
+        IFileScanner scanner,
+        IStorageQuota quota,
+        ICurrentUser currentUser,
         IOptions<StorageOptions> options,
         CancellationToken ct)
     {
@@ -130,13 +128,40 @@ public static class MessageEndpoints
             });
         }
 
+        string userId = currentUser.UserId ?? string.Empty;
+
+        if (!currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(userId))
+        {
+            return Results.Unauthorized();
+        }
+
+        await using (Stream scanStream = file.OpenReadStream())
+        {
+            if (!await scanner.IsCleanAsync(scanStream, ct))
+            {
+                return Results.UnprocessableEntity(new
+                {
+                    errors = new[] { "File failed the security scan." }
+                });
+            }
+        }
+
+        StorageQuotaReservation reservation = await quota.ReserveAsync(
+            userId, file.Length, replaceBytes: 0, ct);
+
         string attachmentUrl;
 
-        await using (Stream stream = file.OpenReadStream())
+        try
         {
+            await using Stream stream = file.OpenReadStream();
             attachmentUrl = await storage.SaveAsync(
                 "attachments", file.FileName, file.Length,
                 contentType!, stream, ct);
+        }
+        catch
+        {
+            await ReleaseQuietlyAsync(quota, reservation);
+            throw;
         }
 
         try
@@ -150,6 +175,7 @@ public static class MessageEndpoints
                 contentType,
                 file.Length);
 
+            await CompleteQuietlyAsync(quota, reservation);
             return Results.Created($"/api/messages/{message.Id}", message);
         }
         catch
@@ -163,6 +189,7 @@ public static class MessageEndpoints
             {
             }
 
+            await ReleaseQuietlyAsync(quota, reservation);
             throw;
         }
     }
@@ -216,6 +243,32 @@ public static class MessageEndpoints
         }
 
         return Results.NoContent();
+    }
+
+    private static async Task CompleteQuietlyAsync(
+        IStorageQuota quota, StorageQuotaReservation reservation)
+    {
+        try
+        {
+            await quota.CompleteAsync(
+                reservation, CancellationToken.None);
+        }
+        catch
+        {
+        }
+    }
+
+    private static async Task ReleaseQuietlyAsync(
+        IStorageQuota quota, StorageQuotaReservation reservation)
+    {
+        try
+        {
+            await quota.ReleaseAsync(
+                reservation, CancellationToken.None);
+        }
+        catch
+        {
+        }
     }
 
     public sealed record SendMessageRequest(

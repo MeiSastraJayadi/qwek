@@ -1,4 +1,5 @@
 ﻿using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
 using Qwek.Applications.UseCases;
 
 namespace Qwek.Interfaces.Endpoints;
@@ -10,11 +11,12 @@ public static class AuthEndpoints
 
         RouteGroupBuilder group = app.MapGroup("/api/auth")
             .WithTags("Auth")
-            .AllowAnonymous()
             .RequireRateLimiting("auth");
 
-        group.MapPost("/register", RegisterAsync);
-        group.MapPost("/login", LoginAsync);
+        group.MapPost("/register", RegisterAsync).AllowAnonymous();
+        group.MapPost("/login", LoginAsync).AllowAnonymous();
+        group.MapPost("/refresh", RefreshAsync).AllowAnonymous();
+        group.MapPost("/logout", LogoutAsync).RequireAuthorization();
 
         return app;
     }
@@ -49,6 +51,32 @@ public static class AuthEndpoints
             : Results.Ok(result);
     }
 
+    private static async Task<IResult> RefreshAsync(
+        RefreshTokenRequest request, Auth auth, CancellationToken ct
+    )
+    {
+        LoginResult? result = await auth.RefreshAsync(
+            request.RefreshToken, ct);
+
+        return result is null
+            ? Results.Unauthorized()
+            : Results.Ok(result);
+    }
+
+    private static async Task<IResult> LogoutAsync(
+        ICurrentUser currentUser, Auth auth, CancellationToken ct
+    )
+    {
+        if (!currentUser.IsAuthenticated ||
+            string.IsNullOrWhiteSpace(currentUser.UserId))
+        {
+            return Results.Unauthorized();
+        }
+
+        await auth.LogoutAsync(currentUser.UserId, ct);
+        return Results.NoContent();
+    }
+
     public sealed record RegisterRequest(
         string Username, string Displayname, string Email, 
         string Password
@@ -57,4 +85,6 @@ public static class AuthEndpoints
     public sealed record LoginRequest(
         string UsernameOrEmail, string Password
     );
+
+    public sealed record RefreshTokenRequest(string RefreshToken);
 }

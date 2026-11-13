@@ -14,6 +14,7 @@ public class Servers
     private readonly IRealtimeNotifier _realtimeNotifier;
     private readonly IUserDirectory _userDirectory;
     private readonly IInviteCodeGenerator _inviteCodeGenerator;
+    private readonly IFileStorage _fileStorage;
 
     public Servers(
         IServerRepository serverRepository, 
@@ -22,7 +23,8 @@ public class Servers
         ICurrentUser currentUser, 
         IRealtimeNotifier realtimeNotifier,
         IUserDirectory userDirectory,
-        IInviteCodeGenerator inviteCodeGenerator
+        IInviteCodeGenerator inviteCodeGenerator,
+        IFileStorage fileStorage
     )
     {
         _serverRepository = serverRepository; 
@@ -32,6 +34,7 @@ public class Servers
         _realtimeNotifier = realtimeNotifier;
         _userDirectory = userDirectory;
         _inviteCodeGenerator = inviteCodeGenerator;
+        _fileStorage = fileStorage;
     }
 
     private string GetUserId()
@@ -49,12 +52,32 @@ public class Servers
     {
         string userId = GetUserId();
         Server server = new Server(
-            name, userId, avatarUrl, _inviteCodeGenerator.Generate()); 
+            name, userId, NormalizeAvatarUrl(avatarUrl),
+            _inviteCodeGenerator.Generate()); 
         await _serverRepository.AddAsync(server, ct);
         await _serverMemberRepository.AddAsync(new ServerMember(userId, server.Id), ct);
         await _unitOfWork.SaveChangesAsync(ct); 
 
         return ToDto(server);
+    }
+
+    private string? NormalizeAvatarUrl(string? avatarUrl)
+    {
+        if (string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            return null;
+        }
+
+        string value = avatarUrl.Trim();
+
+        if (!_fileStorage.IsManagedUrl(value, "avatars"))
+        {
+            throw new ArgumentException(
+                "Server avatar URL must reference an uploaded avatar",
+                nameof(avatarUrl));
+        }
+
+        return value;
     }
 
     private static ServerDto ToDto(Server server) => 

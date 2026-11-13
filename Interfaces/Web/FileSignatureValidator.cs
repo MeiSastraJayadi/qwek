@@ -40,8 +40,6 @@ public static class FileSignatureValidator
                 header[..4].SequenceEqual("RIFF"u8) &&
                 header[8..12].SequenceEqual("WEBP"u8),
             ".pdf" => header.StartsWith("%PDF-"u8),
-            ".zip" or ".docx" or ".xlsx" or ".pptx" => IsZip(header),
-            ".doc" or ".xls" or ".ppt" => header.StartsWith(new byte[] { 0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1 }),
             ".mp4" or ".mov" => header.Length >= 12 &&
                 header[4..8].SequenceEqual("ftyp"u8),
             ".webm" => header.StartsWith(new byte[] { 0x1A, 0x45, 0xDF, 0xA3 }),
@@ -57,11 +55,6 @@ public static class FileSignatureValidator
             _ => false
         };
     }
-
-    private static bool IsZip(ReadOnlySpan<byte> header) =>
-        header.StartsWith(new byte[] { 0x50, 0x4B, 0x03, 0x04 }) ||
-        header.StartsWith(new byte[] { 0x50, 0x4B, 0x05, 0x06 }) ||
-        header.StartsWith(new byte[] { 0x50, 0x4B, 0x07, 0x08 });
 
     private static bool IsPlainText(ReadOnlySpan<byte> header)
     {
