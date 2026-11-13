@@ -1,0 +1,165 @@
+@RealTimeApps_HostAddress = http://localhost:5206
+
+### Register (first user)
+POST {{RealTimeApps_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "alice",
+  "displayname": "Alice",
+  "email": "alice@example.com",
+  "password": "Passw0rd!"
+}
+
+### Login (first user)
+# @name login
+POST {{RealTimeApps_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "alice",
+  "password": "Passw0rd!"
+}
+
+### Token from the login response above
+@token = {{login.response.body.$.accessToken}}
+
+### Create a server
+# @name createServer
+POST {{RealTimeApps_HostAddress}}/api/servers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "TUI Lounge",
+  "avatarUrl": null
+}
+
+### List my servers
+GET {{RealTimeApps_HostAddress}}/api/servers
+Authorization: Bearer {{token}}
+
+### Create a channel
+# @name createChannel
+POST {{RealTimeApps_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/channels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "general",
+  "topic": "General discussion"
+}
+
+### List channels in the server
+GET {{RealTimeApps_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/channels
+Authorization: Bearer {{token}}
+
+### Send a message
+# @name sendMessage
+POST {{RealTimeApps_HostAddress}}/api/channels/{{createChannel.response.body.$.id}}/messages
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Hello from the .http file!"
+}
+
+### Get message history
+GET {{RealTimeApps_HostAddress}}/api/channels/{{createChannel.response.body.$.id}}/messages?limit=50
+Authorization: Bearer {{token}}
+
+### Edit the message
+PATCH {{RealTimeApps_HostAddress}}/api/messages/{{sendMessage.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "content": "Hello again (edited)"
+}
+
+### List server members
+GET {{RealTimeApps_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/members
+Authorization: Bearer {{token}}
+
+### Rename the channel
+PATCH {{RealTimeApps_HostAddress}}/channel/{{createChannel.response.body.$.id}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "general-chat"
+}
+
+### Change the channel topic
+PATCH {{RealTimeApps_HostAddress}}/channel/{{createChannel.response.body.$.id}}/topic
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "topic": "Updated topic"
+}
+
+### Register a second user
+POST {{RealTimeApps_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "bob",
+  "displayname": "Bob",
+  "email": "bob@example.com",
+  "password": "Passw0rd!"
+}
+
+### Login (second user)
+# @name loginBob
+POST {{RealTimeApps_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "bob",
+  "password": "Passw0rd!"
+}
+
+### Token from the second login
+@tokenBob = {{loginBob.response.body.$.accessToken}}
+
+### Second user joins the server
+POST {{RealTimeApps_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/join
+Authorization: Bearer {{tokenBob}}
+
+### Second user sends a message
+POST {{RealTimeApps_HostAddress}}/api/channels/{{createChannel.response.body.$.id}}/messages
+Authorization: Bearer {{tokenBob}}
+Content-Type: application/json
+
+{
+  "content": "Hi, Bob here!"
+}
+
+### Second user leaves the server
+POST {{RealTimeApps_HostAddress}}/api/servers/{{createServer.response.body.$.id}}/leave
+Authorization: Bearer {{tokenBob}}
+
+### Delete the message (owner)
+DELETE {{RealTimeApps_HostAddress}}/api/messages/{{sendMessage.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### Delete the channel (owner)
+DELETE {{RealTimeApps_HostAddress}}/channel/{{createChannel.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### Delete the server (owner)
+DELETE {{RealTimeApps_HostAddress}}/api/servers/{{createServer.response.body.$.id}}
+Authorization: Bearer {{token}}
+
+### Wrong password - expect 401
+POST {{RealTimeApps_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "usernameOrEmail": "alice",
+  "password": "wrong-password"
+}
+
+### No token - expect 401
+GET {{RealTimeApps_HostAddress}}/api/servers

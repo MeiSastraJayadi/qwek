@@ -1,0 +1,16 @@
+**/bin/
+**/obj/
+**/.vs/
+**/.vscode/
+**/.idea/
+**/*.user
+**/*.suo
+.git/
+.gitignore
+.dockerignore
+Dockerfile
+LogFiles/
+uploads/
+**/*.log
+README.md
+RealTimeApps.http

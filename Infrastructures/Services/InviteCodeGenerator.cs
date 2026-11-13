@@ -1,0 +1,13 @@
+﻿using System.Security.Cryptography;
+using RealTimeApps.Applications.Ports;
+
+namespace RealTimeApps.Infrastructures.Services;
+
+public class InviteCodeGenerator : IInviteCodeGenerator
+{
+    private const string Alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    private const int CodeLength = 8;
+
+    public string Generate() =>
+        RandomNumberGenerator.GetString(Alphabet, CodeLength);
+}
