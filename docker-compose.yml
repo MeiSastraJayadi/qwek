@@ -7,8 +7,8 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Production}
       ConnectionStrings__DefaultConnection: ${CONNECTION_STRING:?CONNECTION_STRING is required}
-      Jwt__Issuer: ${JWT_ISSUER:-qwek}
-      Jwt__Audience: ${JWT_AUDIENCE:-qwek}
+      Jwt__Issuer: ${JWT_ISSUER:-Qwek}
+      Jwt__Audience: ${JWT_AUDIENCE:-Qwek}
       Jwt__Key: ${JWT_KEY:-dev-only-change-me-jwt-signing-key-32chars}
       Jwt__ExpiryMinutes: ${JWT_EXPIRY_MINUTES:-60}
     ports:

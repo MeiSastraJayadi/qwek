@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
-using RealTimeApps.Applications.Ports;
+using Qwek.Applications.Ports;
 
-namespace RealTimeApps.Interfaces.Web;
+namespace Qwek.Interfaces.Web;
 
 public class CurrentUser : ICurrentUser
 {

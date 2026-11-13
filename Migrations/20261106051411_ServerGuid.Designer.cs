@@ -5,11 +5,11 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using RealTimeApps.Infrastructures.Persistence;
+using Qwek.Infrastructures.Persistence;
 
 #nullable disable
 
-namespace RealTimeApps.Migrations
+namespace Qwek.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20261106051411_ServerGuid")]
@@ -189,7 +189,7 @@ namespace RealTimeApps.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Channel", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Channel", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -226,7 +226,7 @@ namespace RealTimeApps.Migrations
                     b.ToTable("channels", (string)null);
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Message", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Message", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -271,7 +271,7 @@ namespace RealTimeApps.Migrations
                     b.ToTable("messages", (string)null);
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Server", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Server", b =>
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
@@ -306,7 +306,7 @@ namespace RealTimeApps.Migrations
                     b.ToTable("servers", (string)null);
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.ServerMember", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.ServerMember", b =>
                 {
                     b.Property<string>("PersonalUserId")
                         .HasColumnType("text")
@@ -331,7 +331,7 @@ namespace RealTimeApps.Migrations
                     b.ToTable("server_members", (string)null);
                 });
 
-            modelBuilder.Entity("RealTimeApps.Models.PersonalUser", b =>
+            modelBuilder.Entity("Qwek.Models.PersonalUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("text")
@@ -448,7 +448,7 @@ namespace RealTimeApps.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -458,7 +458,7 @@ namespace RealTimeApps.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -475,7 +475,7 @@ namespace RealTimeApps.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_asp_net_user_roles_asp_net_roles_role_id");
 
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -485,7 +485,7 @@ namespace RealTimeApps.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -493,9 +493,9 @@ namespace RealTimeApps.Migrations
                         .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Channel", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Channel", b =>
                 {
-                    b.HasOne("RealTimeApps.Domains.Entities.Server", null)
+                    b.HasOne("Qwek.Domains.Entities.Server", null)
                         .WithMany("Channels")
                         .HasForeignKey("ServerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -503,16 +503,16 @@ namespace RealTimeApps.Migrations
                         .HasConstraintName("fk_channels_servers_server_id");
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Message", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Message", b =>
                 {
-                    b.HasOne("RealTimeApps.Domains.Entities.Channel", null)
+                    b.HasOne("Qwek.Domains.Entities.Channel", null)
                         .WithMany("Messages")
                         .HasForeignKey("ChannelId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_messages_channels_channel_id");
 
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("PersonalUserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -520,9 +520,9 @@ namespace RealTimeApps.Migrations
                         .HasConstraintName("fk_messages_asp_net_users_personal_user_id");
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Server", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Server", b =>
                 {
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -530,16 +530,16 @@ namespace RealTimeApps.Migrations
                         .HasConstraintName("fk_servers_asp_net_users_owner_id");
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.ServerMember", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.ServerMember", b =>
                 {
-                    b.HasOne("RealTimeApps.Models.PersonalUser", null)
+                    b.HasOne("Qwek.Models.PersonalUser", null)
                         .WithMany()
                         .HasForeignKey("PersonalUserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_server_members_asp_net_users_personal_user_id");
 
-                    b.HasOne("RealTimeApps.Domains.Entities.Server", null)
+                    b.HasOne("Qwek.Domains.Entities.Server", null)
                         .WithMany()
                         .HasForeignKey("ServerId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -547,12 +547,12 @@ namespace RealTimeApps.Migrations
                         .HasConstraintName("fk_server_members_servers_server_id");
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Channel", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Channel", b =>
                 {
                     b.Navigation("Messages");
                 });
 
-            modelBuilder.Entity("RealTimeApps.Domains.Entities.Server", b =>
+            modelBuilder.Entity("Qwek.Domains.Entities.Server", b =>
                 {
                     b.Navigation("Channels");
                 });

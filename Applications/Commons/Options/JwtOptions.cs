@@ -1,4 +1,4 @@
-﻿namespace RealTimeApps.Applications.Commons.Options;
+﻿namespace Qwek.Applications.Commons.Options;
 
 public class JwtOptions
 {

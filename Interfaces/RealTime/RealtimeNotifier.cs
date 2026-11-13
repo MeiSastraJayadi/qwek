@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.Ports;
+using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
 
-namespace RealTimeApps.Interfaces.RealTime;
+namespace Qwek.Interfaces.RealTime;
 
 public class RealtimeNotifier : IRealtimeNotifier
 {

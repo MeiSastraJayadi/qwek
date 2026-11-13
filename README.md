@@ -1,4 +1,4 @@
-# RealTimeApps
+# Qwek
 
 A simple Discord-like real-time chat backend built with ASP.NET Core.
 
@@ -62,16 +62,16 @@ All routes except auth require `Authorization: Bearer <token>`.
 
 ## Testing requests
 
-`RealTimeApps.http` contains a request flow using named requests; open it with the VS Code REST Client extension.
+`Qwek.http` contains a request flow using named requests; open it with the VS Code REST Client extension.
 
 ## Docker
 
 ```bash
-docker build -t realtimeapps .
+docker build -t qwek .
 docker run -p 8080:8080 \
   -e ConnectionStrings__DefaultConnection="<connection-string>" \
-  -e Jwt__Issuer=RealTimeApps \
-  -e Jwt__Audience=RealTimeApps \
+  -e Jwt__Issuer=Qwek \
+  -e Jwt__Audience=Qwek \
   -e Jwt__Key="<32+-character-signing-key>" \
-  realtimeapps
+  qwek
 ```

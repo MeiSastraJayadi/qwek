@@ -1,4 +1,4 @@
-namespace RealTimeApps.Interfaces.RealTime;
+namespace Qwek.Interfaces.RealTime;
 
 public sealed class PresenceTracker
 {

@@ -1,6 +1,6 @@
-using RealTimeApps.Applications.Models;
+using Qwek.Applications.Models;
 
-namespace RealTimeApps.Applications.Ports;
+namespace Qwek.Applications.Ports;
 
 public interface IUserDirectory
 {

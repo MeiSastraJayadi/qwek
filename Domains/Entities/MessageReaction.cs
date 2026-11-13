@@ -1,4 +1,4 @@
-namespace RealTimeApps.Domains.Entities;
+namespace Qwek.Domains.Entities;
 
 public class MessageReaction
 {

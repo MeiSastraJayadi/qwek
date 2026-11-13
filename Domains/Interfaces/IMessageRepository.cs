@@ -1,6 +1,6 @@
-﻿using RealTimeApps.Domains.Entities;
+﻿using Qwek.Domains.Entities;
 
-namespace RealTimeApps.Domains.Interfaces;
+namespace Qwek.Domains.Interfaces;
 
 public interface IMessageRepository
 {

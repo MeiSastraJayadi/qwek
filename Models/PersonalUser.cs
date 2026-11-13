@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace RealTimeApps.Models;
+namespace Qwek.Models;
 
 public class PersonalUser : IdentityUser
 {

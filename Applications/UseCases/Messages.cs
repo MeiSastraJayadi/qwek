@@ -1,9 +1,9 @@
-﻿using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.Ports;
-using RealTimeApps.Domains.Entities;
-using RealTimeApps.Domains.Interfaces;
+﻿using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
+using Qwek.Domains.Entities;
+using Qwek.Domains.Interfaces;
 
-namespace RealTimeApps.Applications.UseCases;
+namespace Qwek.Applications.UseCases;
 
 public class Messages
 {

@@ -2,7 +2,7 @@
 
 #nullable disable
 
-namespace RealTimeApps.Migrations
+namespace Qwek.Migrations
 {
     /// <inheritdoc />
     public partial class AddMessageAttachments : Migration

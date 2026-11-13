@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
-namespace RealTimeApps.Interfaces.Web;
+namespace Qwek.Interfaces.Web;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {

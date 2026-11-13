@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using RealTimeApps.Applications.Commons.Options;
-using RealTimeApps.Applications.Ports;
-using RealTimeApps.Applications.UseCases;
-using RealTimeApps.Infrastructures;
-using RealTimeApps.Interfaces.Endpoints;
-using RealTimeApps.Interfaces.RealTime;
-using RealTimeApps.Interfaces.Web;
+using Qwek.Applications.Commons.Options;
+using Qwek.Applications.Ports;
+using Qwek.Applications.UseCases;
+using Qwek.Infrastructures;
+using Qwek.Interfaces.Endpoints;
+using Qwek.Interfaces.RealTime;
+using Qwek.Interfaces.Web;
 
 
 var builder = WebApplication.CreateBuilder(args);

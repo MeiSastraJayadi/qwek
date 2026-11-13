@@ -1,12 +1,12 @@
 ﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
-using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.Ports;
-using RealTimeApps.Domains.Entities;
-using RealTimeApps.Domains.Interfaces;
+using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
+using Qwek.Domains.Entities;
+using Qwek.Domains.Interfaces;
 
-namespace RealTimeApps.Interfaces.RealTime;
+namespace Qwek.Interfaces.RealTime;
 
 [Authorize]
 public class ChatHub : Hub

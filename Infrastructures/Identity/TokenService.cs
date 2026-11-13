@@ -4,10 +4,10 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using RealTimeApps.Applications.Commons.Options;
-using RealTimeApps.Applications.Ports;
+using Qwek.Applications.Commons.Options;
+using Qwek.Applications.Ports;
 
-namespace RealTimeApps.Infrastructures.Identity;
+namespace Qwek.Infrastructures.Identity;
 
 public class TokenService : ITokenService
 {

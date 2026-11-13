@@ -4,7 +4,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace RealTimeApps.Migrations
+namespace Qwek.Migrations
 {
     /// <inheritdoc />
     public partial class AddSocialFeatures : Migration

@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
-using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.Ports;
-using RealTimeApps.Models;
+using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
+using Qwek.Models;
 
-namespace RealTimeApps.Infrastructures.Identity;
+namespace Qwek.Infrastructures.Identity;
 
 public class IdentityService : IIdentityService
 {

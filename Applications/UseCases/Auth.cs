@@ -1,7 +1,7 @@
-﻿using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.Ports;
+﻿using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
 
-namespace RealTimeApps.Applications.UseCases;
+namespace Qwek.Applications.UseCases;
 
 public class Auth
 {

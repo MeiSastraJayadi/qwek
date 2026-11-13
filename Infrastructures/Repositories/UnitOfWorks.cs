@@ -1,7 +1,7 @@
-﻿using RealTimeApps.Applications.Ports;
-using RealTimeApps.Infrastructures.Persistence;
+﻿using Qwek.Applications.Ports;
+using Qwek.Infrastructures.Persistence;
 
-namespace RealTimeApps.Infrastructures.Repositories;
+namespace Qwek.Infrastructures.Repositories;
 
 public class UnitOfWorks : IUnitOfWork
 {

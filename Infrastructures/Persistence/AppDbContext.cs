@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using RealTimeApps.Domains.Entities;
-using RealTimeApps.Models;
+using Qwek.Domains.Entities;
+using Qwek.Models;
 
-namespace RealTimeApps.Infrastructures.Persistence;
+namespace Qwek.Infrastructures.Persistence;
 
 public class AppDbContext : IdentityDbContext<PersonalUser>
 {

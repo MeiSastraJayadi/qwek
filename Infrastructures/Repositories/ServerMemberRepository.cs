@@ -1,9 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using RealTimeApps.Domains.Entities;
-using RealTimeApps.Domains.Interfaces;
-using RealTimeApps.Infrastructures.Persistence;
+using Qwek.Domains.Entities;
+using Qwek.Domains.Interfaces;
+using Qwek.Infrastructures.Persistence;
 
-namespace RealTimeApps.Infrastructures.Repositories;
+namespace Qwek.Infrastructures.Repositories;
 
 public class ServerMemberRepository : IServerMemberRepository
 {

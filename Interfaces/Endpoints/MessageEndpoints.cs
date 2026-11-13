@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.UseCases;
+using Qwek.Applications.Models;
+using Qwek.Applications.UseCases;
 
-namespace RealTimeApps.Interfaces.Endpoints;
+namespace Qwek.Interfaces.Endpoints;
 
 public static class MessageEndpoints
 {

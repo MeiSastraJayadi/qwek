@@ -1,7 +1,7 @@
 ﻿using System.Security.Cryptography;
-using RealTimeApps.Applications.Ports;
+using Qwek.Applications.Ports;
 
-namespace RealTimeApps.Infrastructures.Services;
+namespace Qwek.Infrastructures.Services;
 
 public class InviteCodeGenerator : IInviteCodeGenerator
 {

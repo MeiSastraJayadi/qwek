@@ -1,4 +1,4 @@
-﻿namespace RealTimeApps.Applications.Ports;
+﻿namespace Qwek.Applications.Ports;
 
 public interface IUnitOfWork
 {

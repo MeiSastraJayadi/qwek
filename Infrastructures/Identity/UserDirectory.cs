@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
-using RealTimeApps.Applications.Models;
-using RealTimeApps.Applications.Ports;
-using RealTimeApps.Infrastructures.Persistence;
+using Qwek.Applications.Models;
+using Qwek.Applications.Ports;
+using Qwek.Infrastructures.Persistence;
 
-namespace RealTimeApps.Infrastructures.Identity;
+namespace Qwek.Infrastructures.Identity;
 
 public sealed class UserDirectory : IUserDirectory
 {

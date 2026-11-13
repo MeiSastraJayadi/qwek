@@ -1,15 +1,15 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using RealTimeApps.Applications.Commons.Options;
-using RealTimeApps.Applications.Ports;
-using RealTimeApps.Domains.Interfaces;
-using RealTimeApps.Infrastructures.Identity;
-using RealTimeApps.Infrastructures.Persistence;
-using RealTimeApps.Infrastructures.Repositories;
-using RealTimeApps.Infrastructures.Services;
-using RealTimeApps.Models;
+using Qwek.Applications.Commons.Options;
+using Qwek.Applications.Ports;
+using Qwek.Domains.Interfaces;
+using Qwek.Infrastructures.Identity;
+using Qwek.Infrastructures.Persistence;
+using Qwek.Infrastructures.Repositories;
+using Qwek.Infrastructures.Services;
+using Qwek.Models;
 
-namespace RealTimeApps.Infrastructures;
+namespace Qwek.Infrastructures;
 
 public static class DependentyInjection
 {
